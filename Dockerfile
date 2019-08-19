@@ -1,7 +1,10 @@
 FROM ubuntu:18.04
 
 # setup args for installation
-ARG MAXITSOURCE=https://sw-tools.rcsb.org/apps/MAXIT/maxit-v10.000-prod-src.tar.gz
+ARG MAXITVER=10.000
+ARG MAXITNAME=maxit-v$MAXITVER-prod-src
+ARG MAXITTARGZ=$MAXITNAME.tar.gz
+ARG MAXITSOURCE=https://sw-tools.rcsb.org/apps/MAXIT/$MAXITTARGZ
 
 # update repository information
 RUN apt-get update --fix-missing
@@ -10,21 +13,37 @@ RUN apt-get update --fix-missing
 RUN apt-get install -y --no-install-recommends \
 gnupg2 curl ca-certificates
 
-# download source
-RUN curl -fsSL MAXITSOURCE
-
-# install utils to build source
-RUN apt-get install -y --no-install-recommends \
-        gunzip tar build-essential
-
-# install gsl
-RUN apt-get install -y --no-install-recommends \
-    libgsl23 libgslcblas0 libgsl-dev libgsl-dbg
-
 # install some packages for development (optional)
 RUN apt-get install -y --no-install-recommends \
     vim git
 
+# install utils to build source
+RUN apt-get install -y --no-install-recommends \
+        build-essential
+
+# additional (undeclared in documentation) dependencies
+RUN apt-get install -y --no-install-recommends \
+        bison flex tcsh
+
+# maxit install time!
+RUN mkdir -p /usr/local/maxit
+
+# download source, expand, build
+RUN cd /usr/local/maxit && \
+    curl -fsSL -O $MAXITSOURCE && \
+    tar -zxf $MAXITTARGZ && \
+    cd $MAXITNAME && \
+    make binary
+
+# setup env vars for install/runtime
+ENV RCSBROOT=/usr/local/maxit/$MAXITNAME
+ENV PATH="$RCSBROOT/bin":$PATH
+
+# cleanup
+RUN rm -f /usr/local/maxit/$MAXITTARGZ
+RUN apt-get purge --auto-remove -y \
+    gnupg2 curl ca-certificates \
+    build-essential bison flex tcsh
 # cleanup install cache
 RUN rm -rf /var/lib/apt/lists/*
 
