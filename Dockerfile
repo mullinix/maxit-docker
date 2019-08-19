@@ -38,6 +38,7 @@ RUN cd /usr/local/maxit && \
 # setup env vars for install/runtime
 ENV RCSBROOT=/usr/local/maxit/$MAXITNAME
 ENV PATH="$RCSBROOT/bin":$PATH
+RUN chmod 775 /usr/local/maxit/$MAXITNAME -R
 
 # cleanup
 RUN rm -f /usr/local/maxit/$MAXITTARGZ
